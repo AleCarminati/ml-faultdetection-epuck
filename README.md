@@ -62,3 +62,7 @@ Before committing any changes, be sure to have installed the pre-commit hooks by
 ```
 
 The pre-commit hooks contain some automatic checks to improve readability of the code. In particular, it uses the `clang` package.
+
+## Milestones
+
+Commit [19f511f](https://github.com/AleCarminati/ml-faultdetection-epuck/commit/19f511f52f5c2740eff590ec553d2d9f3853ff14): this version of the software has been used to generate training data and to test the fault detection system when a single robot is fault, obtaining the results that are displayed in the master's thesis.
