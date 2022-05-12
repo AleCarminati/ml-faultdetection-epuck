@@ -310,9 +310,50 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
    m_lastWheelVel[1] = 0.0f;
 
    /* Initialize XGBoost. */
-   if(!m_training){
+   if(!m_training && use_xg_booster()){
       safe_xgboost(XGBoosterCreate(0,0, &booster));
-      safe_xgboost(XGBoosterLoadModel(booster,"./python/boosterAggrNum.json"));
+      std::string path = "./classifiers/booster_";
+      path += (m_behavior_str + "_");
+      if(CConfiguration::BOOLEAN_OBSERVATIONS){
+         path+="bin";
+      }else{
+         path+="num";
+      }
+      path+=".json";
+      safe_xgboost(XGBoosterLoadModel(booster,path.c_str()));
+   }
+   
+   int random_seed = CSimulator::GetInstance().GetRandomSeed();
+   bool newFile = false;
+   std::string filename="";
+
+   if(CConfiguration::BOOLEAN_OBSERVATIONS){
+      filename = "./data/binary_testing/"+ m_behavior_str + "/" + 
+      m_behavior_str + "_" + m_faultType + "/"+
+      m_behavior_str + "_" + m_faultType + "_" +std::to_string(random_seed) + ".csv";
+   }else{
+      filename = "./data/numerical_testing/"+ m_behavior_str + "/" + 
+      m_behavior_str + "_" + m_faultType + "/"+
+      m_behavior_str + "_" + m_faultType + "_" +std::to_string(random_seed) + ".csv";
+   }
+
+   std::ifstream fileExistence(filename);
+   if(!fileExistence){
+      newFile = true;
+   }
+   fileExistence.close();
+
+   output_file.open(filename, std::ofstream::out | std::ofstream::app);
+
+
+   if(!output_file.is_open()){
+      THROW_ARGOSEXCEPTION("Error in opening the output CSV file.");
+   }
+
+   // If the file has just been created, write its header.
+   if(newFile){
+      output_file << "control_step;observed_robot;number_votes;coalition_response;";
+      output_file << "real_faulty"<<std::endl;
    }
 }
 
@@ -320,6 +361,7 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
 /****************************************/
 
 void CEPuckFaultDetection::ControlStep() {
+
 
    m_pcRABA->ClearData(); // Clear the channel at the start of each control cycle.
 
@@ -1268,122 +1310,118 @@ void CEPuckFaultDetection::UpdateFaultProbabilities(){
 
          stringReplace(observations, ',', '.');
 
-         DMatrixHandle dmatrix;
-         if(CConfiguration::BOOLEAN_OBSERVATIONS){
-            safe_xgboost(XGDMatrixCreateFromMat(inputMatrixBin, 1, 6*N_OBSERVATIONS, 10000.0f,&dmatrix));
-         }else{
-            safe_xgboost(XGDMatrixCreateFromMat(inputMatrixNum, 1, 5*N_OBSERVATIONS, 10000.0f,&dmatrix));
-         }
-
-         const bst_ulong* out_shape;
-         bst_ulong out_dim = 0;
-         const float* out_result = NULL;
-
-         safe_xgboost(XGBoosterPredictFromDMatrix(booster, dmatrix, 
-            "{\"type\": 0, \"training\": false, \"iteration_begin\": 0,\
-            \"iteration_end\": 0,\
-            \"strict_shape\": true}", &out_shape, &out_dim, &out_result));
-
-         probability = *out_result;
-
-         safe_xgboost(XGDMatrixFree(dmatrix));
-
-         
-         /* To speed up the tests, the logistic regressor used for aggregation
-          * has been implemented in C++: in this way the program does not need 
-          * to call Python, reducing the overhead.*/
-         
-         /* AGGR_BINARY */
-         /*float coef [60] = {
-          -0.5255758 , -0.16779712,  0.2411273 , -0.58071765, -0.52568955,
-         0.0452808 , -0.15752005,  0.24483697, -0.00489347, -0.06457011,
-        -0.01531281,  0.02350765, -0.37394181,  0.1654909 ,  0.18572142,
-         0.0325601 ,  0.04289669,  0.00218899,  0.02109214, -0.12322903,
-        -0.19767609, -0.09785978, -0.02007878, -0.0186156 ,  0.00525923,
-        -0.22549801, -0.21469018, -0.08392158, -0.01207189, -0.07273215,
-        -0.00337871, -0.04448924, -0.02780185, -0.20201504,  0.09795624,
-        -0.11760319, -0.01008855,  0.11074349,  0.21510572, -0.19385052,
-         0.22693109, -0.25756173, -0.08720132,  0.04054864,  0.21195959,
-        -0.0546561 ,  0.15793664, -0.38704823, -0.22533915,  0.26166264,
-        -0.11454954, -0.61941977,  0.20441395, -0.61816364, -0.71059491,
-         0.1572795 , -0.1533707 , -1.65196666,  0.1240139 , -1.67170522 
-         };
-         float intercept = 4.55981711;*/
-
-         /* DISP_BINARY */
-         /*float coef [60] = {
-          4.71229746e-01, -4.95475861e-01, -1.85710169e+00,
-        -1.67767962e-01, -3.76376399e-01,  3.80163528e-01,
-         1.86926277e-01, -2.36782829e-01, -1.10059433e+00,
-         8.50634999e-02,  2.34071683e-01, -3.98700784e-02,
-        -2.99164833e-01,  3.04760386e-02, -5.65901314e-01,
-         5.36652924e-02, -1.45597482e-02,  1.67637423e-01,
-         3.55258616e-01,  3.12110550e-01,  3.84585522e-02,
-        -2.10594073e-01,  2.09190248e-01, -2.01608048e-01,
-        -2.17270403e-01, -4.55830684e-01,  1.29452118e-02,
-         3.39710015e-01, -4.76830519e-01, -1.02316195e-01,
-        -1.52524831e-01, -5.35802951e-01, -3.59557495e-01,
-        -6.44614634e-04,  1.49619598e-01,  1.31570576e-01,
-         8.41003282e-01,  4.15012814e-01, -7.07776129e-01,
-        -4.44768768e-02,  8.99032912e-02,  1.09593721e-01,
-        -6.56602544e-01,  5.32415974e-02, -9.27156023e-01,
-        -1.97374242e-01, -1.31576627e-01,  2.73575932e-01,
-         4.56211161e-02,  7.99847965e-02, -1.33234593e+00,
-         1.57941407e-01,  1.37262159e-01, -1.84486264e-02,
-         3.40058913e-01, -1.28725524e+00, -1.80447662e+00,
-         1.85217360e-01, -2.16563601e-01, -3.40009818e-01   
-         };
-         float intercept = 5.72664389;*/
-
-         /* DISP_NUMERICAL */
-         /*float coef [50] = {
-         -1.40132609e-01, -1.22553644e-01, -1.58706589e+00,
-         4.59548158e-02,  9.11113144e-02, -5.17007456e-02,
-        -3.28386368e-02, -5.10768885e-01,  1.57658262e-01,
-        -4.71079889e-02, -4.11917603e-02, -6.31406701e-02,
-        -4.28566911e-01, -6.31055647e-02,  1.28444550e-01,
-        -7.91498164e-02, -6.21547300e-02,  2.86739128e-01,
-         4.83510701e-02, -1.43129319e-01,  2.29665982e-02,
-         9.72578312e-03,  4.11113038e-01, -1.40191426e-01,
-         1.24042160e-03, -3.27973694e-02, -1.99808280e-03,
-         4.34873595e-01,  1.53431825e-01, -9.66260049e-02,
-         1.79251450e-02, -4.84185010e-02,  2.70310343e-01,
-        -1.22253205e-01,  1.60584238e-01, -3.21468423e-02,
-        -3.89419176e-02,  3.36794571e-01,  1.33590323e-01,
-        -6.13119428e-02, -9.28606276e-02, -7.84526692e-02,
-        -2.31090350e-01,  6.44537888e-02, -3.97229910e-02,
-        -1.60105561e-01, -1.03711560e-01, -6.32299474e-01,
-        -6.04713626e-02,  2.30977803e-01         
-         };
-         float intercept = -2.05433468;*/
-
-         /* FLOC_NUMERICAL */
-         /*float coef [50] = {
-         -0.09897857, -0.08683635, -1.62864043,  0.09771668,  0.02054638,
-        -0.0827564 , -0.0635599 , -1.16469369, -0.0153803 ,  0.02708952,
-        -0.0592612 , -0.06968587, -0.46472881,  0.13619741, -0.01838992,
-        -0.10305295, -0.08790605, -0.31681486, -0.14456583, -0.0423143 ,
-        -0.06919569, -0.07225145,  0.00912332,  0.09800351,  0.03974052,
-        -0.09186092, -0.10043608,  0.3218838 ,  0.08866995,  0.04662667,
-        -0.09247033, -0.09045124,  0.41117892, -0.02590526,  0.02671375,
-        -0.09264751, -0.06581257,  0.39280796,  0.45024887, -0.00875648,
-        -0.09301125, -0.12119788,  0.6533595 ,  0.41840311,  0.09222907,
-        -0.14584664, -0.14949432,  0.67208438,  0.34113341,  0.12415187         
-         };
-         float intercept = -1.91162457;*/
-
-         /*float sum = intercept;
-         if(CConfiguration::BOOLEAN_OBSERVATIONS){
-            for(int j = 0; j<60; ++j){
-               sum += coef[j]*m_booleanObservations[i][j/6].features[j%6];
+         if(use_xg_booster()){
+            DMatrixHandle dmatrix;
+            if(CConfiguration::BOOLEAN_OBSERVATIONS){
+               safe_xgboost(XGDMatrixCreateFromMat(inputMatrixBin, 1, 6*N_OBSERVATIONS, 10000.0f,&dmatrix));
+            }else{
+               safe_xgboost(XGDMatrixCreateFromMat(inputMatrixNum, 1, 5*N_OBSERVATIONS, 10000.0f,&dmatrix));
             }
+
+            const bst_ulong* out_shape;
+            bst_ulong out_dim = 0;
+            const float* out_result = NULL;
+
+            safe_xgboost(XGBoosterPredictFromDMatrix(booster, dmatrix, 
+               "{\"type\": 0, \"training\": false, \"iteration_begin\": 0,\
+               \"iteration_end\": 0,\
+               \"strict_shape\": true}", &out_shape, &out_dim, &out_result));
+
+            probability = *out_result;
          }else{
-            for(int j=0; j<50;++j){
-               sum += coef[j]*inputMatrixNum[j];
+            float sum;
+            if(CConfiguration::BOOLEAN_OBSERVATIONS){
+               std::vector<float> coef(60, 0);
+               float intercept;
+               if(m_behavior_str==CConfiguration::AGGREGATE){
+                  coef = {-0.5255758 , -0.16779712,  0.2411273 , -0.58071765, -0.52568955,
+                           0.0452808 , -0.15752005,  0.24483697, -0.00489347, -0.06457011,
+                          -0.01531281,  0.02350765, -0.37394181,  0.1654909 ,  0.18572142,
+                           0.0325601 ,  0.04289669,  0.00218899,  0.02109214, -0.12322903,
+                          -0.19767609, -0.09785978, -0.02007878, -0.0186156 ,  0.00525923,
+                          -0.22549801, -0.21469018, -0.08392158, -0.01207189, -0.07273215,
+                          -0.00337871, -0.04448924, -0.02780185, -0.20201504,  0.09795624,
+                          -0.11760319, -0.01008855,  0.11074349,  0.21510572, -0.19385052,
+                           0.22693109, -0.25756173, -0.08720132,  0.04054864,  0.21195959,
+                          -0.0546561 ,  0.15793664, -0.38704823, -0.22533915,  0.26166264,
+                          -0.11454954, -0.61941977,  0.20441395, -0.61816364, -0.71059491,
+                           0.1572795 , -0.1533707 , -1.65196666,  0.1240139 , -1.67170522 
+                           };
+                  intercept = 4.55981711;
+               }else if(m_behavior_str==CConfiguration::DISPERSE){
+                  coef = {
+                      4.71229746e-01, -4.95475861e-01, -1.85710169e+00,
+                    -1.67767962e-01, -3.76376399e-01,  3.80163528e-01,
+                     1.86926277e-01, -2.36782829e-01, -1.10059433e+00,
+                     8.50634999e-02,  2.34071683e-01, -3.98700784e-02,
+                    -2.99164833e-01,  3.04760386e-02, -5.65901314e-01,
+                     5.36652924e-02, -1.45597482e-02,  1.67637423e-01,
+                     3.55258616e-01,  3.12110550e-01,  3.84585522e-02,
+                    -2.10594073e-01,  2.09190248e-01, -2.01608048e-01,
+                    -2.17270403e-01, -4.55830684e-01,  1.29452118e-02,
+                     3.39710015e-01, -4.76830519e-01, -1.02316195e-01,
+                    -1.52524831e-01, -5.35802951e-01, -3.59557495e-01,
+                    -6.44614634e-04,  1.49619598e-01,  1.31570576e-01,
+                     8.41003282e-01,  4.15012814e-01, -7.07776129e-01,
+                    -4.44768768e-02,  8.99032912e-02,  1.09593721e-01,
+                    -6.56602544e-01,  5.32415974e-02, -9.27156023e-01,
+                    -1.97374242e-01, -1.31576627e-01,  2.73575932e-01,
+                     4.56211161e-02,  7.99847965e-02, -1.33234593e+00,
+                     1.57941407e-01,  1.37262159e-01, -1.84486264e-02,
+                     3.40058913e-01, -1.28725524e+00, -1.80447662e+00,
+                     1.85217360e-01, -2.16563601e-01, -3.40009818e-01   
+                     };
+                  intercept = 5.72664389;
+               }
+               sum = intercept;
+               for(int j = 0; j<60; ++j){
+                  sum += coef[j]*m_booleanObservations[i][j/6].features[j%6];
+               }
+            }else{
+               std::vector<float> coef(50, 0);
+               float intercept;
+               if(m_behavior_str==CConfiguration::DISPERSE){
+                  coef = {-1.40132609e-01, -1.22553644e-01, -1.58706589e+00,
+                     4.59548158e-02,  9.11113144e-02, -5.17007456e-02,
+                    -3.28386368e-02, -5.10768885e-01,  1.57658262e-01,
+                    -4.71079889e-02, -4.11917603e-02, -6.31406701e-02,
+                    -4.28566911e-01, -6.31055647e-02,  1.28444550e-01,
+                    -7.91498164e-02, -6.21547300e-02,  2.86739128e-01,
+                     4.83510701e-02, -1.43129319e-01,  2.29665982e-02,
+                     9.72578312e-03,  4.11113038e-01, -1.40191426e-01,
+                     1.24042160e-03, -3.27973694e-02, -1.99808280e-03,
+                     4.34873595e-01,  1.53431825e-01, -9.66260049e-02,
+                     1.79251450e-02, -4.84185010e-02,  2.70310343e-01,
+                    -1.22253205e-01,  1.60584238e-01, -3.21468423e-02,
+                    -3.89419176e-02,  3.36794571e-01,  1.33590323e-01,
+                    -6.13119428e-02, -9.28606276e-02, -7.84526692e-02,
+                    -2.31090350e-01,  6.44537888e-02, -3.97229910e-02,
+                    -1.60105561e-01, -1.03711560e-01, -6.32299474e-01,
+                    -6.04713626e-02,  2.30977803e-01
+                  };
+                  intercept = -2.05433468;
+               }else if(m_behavior_str==CConfiguration::FLOCKING){
+                  coef = {
+                      -0.09897857, -0.08683635, -1.62864043,  0.09771668,  0.02054638,
+                       -0.0827564 , -0.0635599 , -1.16469369, -0.0153803 ,  0.02708952,
+                       -0.0592612 , -0.06968587, -0.46472881,  0.13619741, -0.01838992,
+                       -0.10305295, -0.08790605, -0.31681486, -0.14456583, -0.0423143 ,
+                       -0.06919569, -0.07225145,  0.00912332,  0.09800351,  0.03974052,
+                       -0.09186092, -0.10043608,  0.3218838 ,  0.08866995,  0.04662667,
+                       -0.09247033, -0.09045124,  0.41117892, -0.02590526,  0.02671375,
+                       -0.09264751, -0.06581257,  0.39280796,  0.45024887, -0.00875648,
+                       -0.09301125, -0.12119788,  0.6533595 ,  0.41840311,  0.09222907,
+                       -0.14584664, -0.14949432,  0.67208438,  0.34113341,  0.12415187   
+                     };
+                  intercept = -1.91162457;
+               }
+               sum = intercept;
+               for(int j=0; j<50;++j){
+                  sum += coef[j]*inputMatrixNum[j];
+               }
             }
+            probability = 1/(1+exp(-sum));
          }
-                  
-         probability = 1/(1+exp(-sum));*/
 
          /* DUMMY CLASSIFIER */
          /*CRange<Real> range(0.0f, 1.0f);
@@ -1559,59 +1597,21 @@ void CEPuckFaultDetection::WriteToCSVTraining(){
 }
 
 void CEPuckFaultDetection::WriteToCSVTesting(){
-   int random_seed = CSimulator::GetInstance().GetRandomSeed();
-   bool newFile = false;
-   std::string filename="";
-
-   if(CConfiguration::BOOLEAN_OBSERVATIONS){
-      filename = "./data/binary_testing/"+ m_behavior_str + "/" + 
-      m_behavior_str + "_" + m_faultType + "/"+
-      m_behavior_str + "_" + m_faultType + "_" +std::to_string(random_seed) + ".csv";
-   }else{
-      filename = "./data/numerical_testing/"+ m_behavior_str + "/" + 
-      m_behavior_str + "_" + m_faultType + "/"+
-      m_behavior_str + "_" + m_faultType + "_" +std::to_string(random_seed) + ".csv";
-   }
-
-   /*filename = "./data/dummy_testing/"+ m_behavior_str + "/" + 
-   m_behavior_str + "_" + m_faultType + "/"+
-   m_behavior_str + "_" + m_faultType + "_" +std::to_string(random_seed) + ".csv";*/
-   
-   std::ifstream fileExistence(filename);
-   if(!fileExistence){
-      newFile = true;
-   }
-   fileExistence.close();
-
-   std::ofstream output(filename, std::ofstream::app);
-
-   if(!output.is_open()){
-      THROW_ARGOSEXCEPTION("Error in opening the output CSV file.");
-   }
-
-   // If the file has just been created, write its header.
-   if(newFile){
-      output << "control_step;observed_robot;number_votes;coalition_response;";
-      output << "real_faulty\n";
-   }
-
    for(int i=0;i<N_ROBOTS;++i){
       if(m_localCoalitionList[i].validity){
-         output << std::to_string(m_timeCounter)+";"+std::to_string(i)+";"+
+         output_file << std::to_string(m_timeCounter)+";"+std::to_string(i)+";"+
             std::to_string(m_localCoalitionList[i].numberOfVotes)+";"+
             std::to_string(m_localCoalitionList[i].faulty)+";";
          if(i==CConfiguration::ID_FAULTY_ROBOT && 
             m_faultType.compare(CConfiguration::FAULT_NONE)!=0)
          {
-            output << "1";
+            output_file << "1";
          }else{
-            output << "0";
+            output_file << "0";
          }
-         output << "\n";    
+         output_file << std::endl;  
       }
    }
-
-   output.close();
 
 }
 
@@ -1698,6 +1698,19 @@ void CEPuckFaultDetection::ReadMessagesCoalitionFormation(
          }
       }
    }
+}
+
+bool CEPuckFaultDetection::use_xg_booster(){
+   if(CConfiguration::BOOLEAN_OBSERVATIONS){
+      if(m_behavior_str=="floc" || m_behavior_str=="homi"){
+         return true;
+      }
+   }else{
+      if(m_behavior_str=="aggr" || m_behavior_str=="homi"){
+         return true;
+      }
+   }
+   return false;
 }
 
 /****************************************/

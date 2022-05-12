@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
-project(argos3_examples)
+cmake_policy(SET CMP0048 NEW)
+project(ml-faultdetection-epuck VERSION 0.1)
 
 if(APPLE)
   option(ASAN "Use Clang Address Sanitizer in Debug builds")

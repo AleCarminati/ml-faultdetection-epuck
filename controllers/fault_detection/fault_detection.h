@@ -294,6 +294,15 @@ private:
    VotesAccumulator m_votesAccumulator[N_ROBOTS];
 
    BoosterHandle booster;
+
+   /* Filestream that connects to the output file. 
+    */
+   std::ofstream output_file;
+
+   /* This function returns if the classifier that the robot must use is 
+    * an extreme gradient booster.
+    */
+   bool use_xg_booster();
 };
 
 #endif
