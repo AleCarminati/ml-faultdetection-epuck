@@ -348,16 +348,21 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
   int random_seed = CSimulator::GetInstance().GetRandomSeed();
   bool newFile = false;
   std::string filename = "";
-
-  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
-    filename = "./data/binary_testing/" + m_behavior_str + "/" +
-               m_behavior_str + "_" + m_faultType + "/" + m_behavior_str + "_" +
-               m_faultType + "_" + std::to_string(random_seed) + ".csv";
-  } else {
-    filename = "./data/numerical_testing/" + m_behavior_str + "/" +
-               m_behavior_str + "_" + m_faultType + "/" + m_behavior_str + "_" +
-               m_faultType + "_" + std::to_string(random_seed) + ".csv";
+  filename = "./data/binary_training/" + m_behavior_str + "/" + m_behavior_str +
+             "_" + m_faultType + "_" + std::to_string(random_seed) + ".csv";
+  std::string testing_or_training = "testing";
+  std::string binary_or_numerical = "numerical";
+  std::string behav_fault_folder = m_behavior_str + "_" + m_faultType + "/";
+  if (m_training) {
+    testing_or_training = "training";
+    behav_fault_folder = "";
   }
+  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
+    binary_or_numerical = "binary";
+  }
+  filename = "./data/" + binary_or_numerical + "_" + testing_or_training + "/" +
+             m_behavior_str + "/" + behav_fault_folder + m_behavior_str + "_" +
+             m_faultType + "_" + std::to_string(random_seed) + ".csv";
 
   std::ifstream fileExistence(filename);
   if (!fileExistence) {
@@ -373,9 +378,30 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
 
   // If the file has just been created, write its header.
   if (newFile) {
-    output_file
-        << "control_step;observed_robot;number_votes;coalition_response;";
-    output_file << "real_faulty" << std::endl;
+    if (m_training) {
+      output_file << "id_experiment;control_step;observed_robot;";
+      if (CConfiguration::BOOLEAN_OBSERVATIONS) {
+        for (int i = N_OBSERVATIONS - 1; i >= 0; --i) {
+          for (int j = 1; j < 7; ++j) {
+            output_file << "F" + std::to_string(j) + "_t-" + std::to_string(i) +
+                               ";";
+          }
+        }
+      } else {
+        for (int i = N_OBSERVATIONS - 1; i >= 0; --i) {
+          output_file << "vel_left_wheel_t-" + std::to_string(i) + ";";
+          output_file << "vel_right_wheel_t-" + std::to_string(i) + ";";
+          output_file << "distance_traveled_t-" + std::to_string(i) + ";";
+          output_file << "min_neighbor_distance_t-" + std::to_string(i) + ";";
+          output_file << "avg_neighbor_distance_t-" + std::to_string(i) + ";";
+        }
+      }
+      output_file << "fault_probability" << std::endl;
+    } else {
+      output_file
+          << "control_step;observed_robot;number_votes;coalition_response;";
+      output_file << "real_faulty" << std::endl;
+    }
   }
 }
 
@@ -1606,45 +1632,7 @@ unsetenv("PYTHONPATH");*/
 }
 
 void CEPuckFaultDetection::WriteToCSVTraining() {
-  int random_seed = CSimulator::GetInstance().GetRandomSeed();
-  bool newFile = false;
-
-  std::string filename = "";
-
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
-    filename = "./data/binary_training/" + m_behavior_str + "/" +
-               m_behavior_str + "_" + m_faultType + "_" +
-               std::to_string(random_seed) + ".csv";
-  } else {
-    filename = "./data/numerical_training/" + m_behavior_str + "/" +
-               m_behavior_str + "_" + m_faultType + "_" +
-               std::to_string(random_seed) + ".csv";
-  }
-
-  std::ifstream fileExistence(filename);
-  if (!fileExistence) {
-    newFile = true;
-  }
-  fileExistence.close();
-
-  std::ofstream output(filename, std::ofstream::app);
-
-  if (!output.is_open()) {
-    THROW_ARGOSEXCEPTION("Error in opening the output CSV file.");
-  }
-
-  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
-    // If the file has just been created, write its header.
-    if (newFile) {
-      output << "id_experiment;control_step;observed_robot;";
-      for (int i = N_OBSERVATIONS - 1; i >= 0; --i) {
-        for (int j = 1; j < 7; ++j) {
-          output << "F" + std::to_string(j) + "_t-" + std::to_string(i) + ";";
-        }
-      }
-      output << "fault_probability\n";
-    }
-
     for (int i = 0; i < N_ROBOTS; ++i) {
       bool write = true;
 
@@ -1661,28 +1649,15 @@ void CEPuckFaultDetection::WriteToCSVTraining() {
           write = false;
         }
       }
-      datapoint += std::to_string(m_faultProbabilities[i]) + "\n";
+      datapoint += std::to_string(m_faultProbabilities[i]);
 
       stringReplace(datapoint, ',', '.');
 
       if (write) {
-        output << datapoint;
+        output_file << datapoint << std::endl;
       }
     }
   } else {
-    // If the file has just been created, write its header.
-    if (newFile) {
-      output << "id_experiment;control_step;observed_robot;";
-      for (int i = N_OBSERVATIONS - 1; i >= 0; --i) {
-        output << "vel_left_wheel_t-" + std::to_string(i) + ";";
-        output << "vel_right_wheel_t-" + std::to_string(i) + ";";
-        output << "distance_traveled_t-" + std::to_string(i) + ";";
-        output << "min_neighbor_distance_t-" + std::to_string(i) + ";";
-        output << "avg_neighbor_distance_t-" + std::to_string(i) + ";";
-      }
-      output << "fault_probability\n";
-    }
-
     for (int i = 0; i < N_ROBOTS; ++i) {
       bool write = true;
 
@@ -1700,17 +1675,15 @@ void CEPuckFaultDetection::WriteToCSVTraining() {
           write = false;
         }
       }
-      datapoint += std::to_string(m_faultProbabilities[i]) + "\n";
+      datapoint += std::to_string(m_faultProbabilities[i]);
 
       stringReplace(datapoint, ',', '.');
 
       if (write) {
-        output << datapoint;
+        output_file << datapoint << std::endl;
       }
     }
   }
-
-  output.close();
 }
 
 void CEPuckFaultDetection::WriteToCSVTesting() {
