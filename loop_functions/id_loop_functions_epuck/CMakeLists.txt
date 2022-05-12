@@ -1,4 +1,4 @@
-add_library(id_loop_functions_epuck MODULE 
+add_library(id_loop_functions_epuck MODULE
   id_qtuser_functions_epuck.h
   id_qtuser_functions_epuck.cpp)
 

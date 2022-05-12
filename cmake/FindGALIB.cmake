@@ -1,12 +1,12 @@
 # Try to find GALIB
 # See http://lancet.mit.edu/ga/
 #
-# Once run this will define: 
-# 
+# Once run this will define:
+#
 # GALIB_FOUND        = system has GALIB lib
 #
 # GALIB_LIBRARIES    = full path to the libraries
-# GALIB_INCLUDE_DIR  = where to find headers 
+# GALIB_INCLUDE_DIR  = where to find headers
 
 FIND_PATH(GALIB_INCLUDE_DIR
   NAMES

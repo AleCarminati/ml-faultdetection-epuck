@@ -29,12 +29,12 @@ for fault in faults:
 # Remove the inconsistent rows.
 print("\nRemoving inconsistent rows...")
 eliminatedRows = 0
-if not(booleanFeatures): 
+if not(booleanFeatures):
   for fault in faults:
       for i in range(0, 10):
         # The inconsistency limit of the distance traveled is 52 because it must
         # account for the noise of observation. The nominal limit, without noise,
-        # would be 50. 
+        # would be 50.
         inconsistentIndexes = separateDatasets[fault].index[(separateDatasets[fault]['distance_traveled_t-'+str(i)]>52).add(separateDatasets[fault]['min_neighbor_distance_t-'+str(i)]>separateDatasets[fault]['avg_neighbor_distance_t-'+str(i)])]
         eliminatedRows += len(inconsistentIndexes)
         separateDatasets[fault] = separateDatasets[fault].drop(inconsistentIndexes)
@@ -57,7 +57,7 @@ for fault in faults:
     rowsBeforeDropping = separateDatasets[fault].shape[0]
     separateDatasets[fault] = separateDatasets[fault].drop(
       separateDatasets[fault].loc[np.logical_and(separateDatasets[fault]["observed_robot"] == situationToDrop["observed_robot"].iloc[0],
-      np.logical_and(separateDatasets[fault]["id_experiment"] == situationToDrop["id_experiment"].iloc[0], 
+      np.logical_and(separateDatasets[fault]["id_experiment"] == situationToDrop["id_experiment"].iloc[0],
       separateDatasets[fault]["control_step"] == situationToDrop["control_step"].iloc[0]))].index)
     droppedRows += rowsBeforeDropping - separateDatasets[fault].shape[0]
     datasetFaultRows = separateDatasets[fault][separateDatasets[fault]["fault_probability"] == 1]
@@ -82,7 +82,7 @@ while(normalRows.shape[0] > 0.80 * totalDataset.shape[0]):
   rowsBeforeDropping = totalDataset.shape[0]
   totalDataset = totalDataset.drop(
       totalDataset.loc[np.logical_and(totalDataset["observed_robot"] == situationToDrop["observed_robot"].iloc[0],
-      np.logical_and(totalDataset["id_experiment"] == situationToDrop["id_experiment"].iloc[0], 
+      np.logical_and(totalDataset["id_experiment"] == situationToDrop["id_experiment"].iloc[0],
       totalDataset["control_step"] == situationToDrop["control_step"].iloc[0]))].index)
   droppedRows += rowsBeforeDropping - totalDataset.shape[0]
   normalRows = totalDataset[totalDataset["fault_probability"]==0]
@@ -90,7 +90,7 @@ while(normalRows.shape[0] > 0.80 * totalDataset.shape[0]):
   #print(f"Current percentage of normal rows: {normalRows.shape[0]/totalDataset.shape[0]:2.4%}", end='\r')
 print(f"Number of rows after balancing faulty and non-faulty rows: {totalDataset.shape[0]}" + " "*3  + "=>" + " "*3 + f"{droppedRows} rows dropped")
 
-# Use label encoding on the id of the experiment to reduce their value. 
+# Use label encoding on the id of the experiment to reduce their value.
 totalDataset['id_experiment'] = LabelEncoder().fit_transform(totalDataset['id_experiment'])
 
 # Write the preprocessed dataset in a new .csv file.

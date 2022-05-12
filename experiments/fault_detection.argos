@@ -5,13 +5,13 @@
   <!-- * General configuration * -->
   <!-- ************************* -->
   <framework>
-    <!-- The attribute 'threads' must remain to '0', in this way the program is run on a single thread. 
-          All the algorithms have been tested on single-threaded simulation. Multi-threading could 
+    <!-- The attribute 'threads' must remain to '0', in this way the program is run on a single thread.
+          All the algorithms have been tested on single-threaded simulation. Multi-threading could
           generate unexpected behaviors due to concurrency. -->
     <system threads="0" />
-    <experiment length="600"
+    <experiment length="120"
                 ticks_per_second="10"
-                random_seed="0" />
+                random_seed="210018" />
   </framework>
 
   <!-- *************** -->
@@ -31,7 +31,7 @@
         <differential_steering implementation="default" vel_noise_range="-0.1:0.1"  dist_noise_range="-1.0:1.0" />
         <positioning implementation="default" />
       </sensors>
-      <params behavior="aggr" velocity="5" fault_type="pmin" training="false"/>
+      <params behavior="homi" velocity="5" fault_type="lact" training="true"/>
     </epuck_fault_detection>
 
   </controllers>

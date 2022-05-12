@@ -1,12 +1,12 @@
 # Machine Learning-based fault detection in a e-puck swarm
 
-This repository contains the code to run a machine learning-based fault detection algorithm in a e-puck swarm. 
+This repository contains the code to run a machine learning-based fault detection algorithm in a e-puck swarm.
 
-It is part of my master's thesis work in Politecnico di Milano to obtain the Masters of Science in Computer Science and Engineering and in Mathematical Engineering.	  
+It is part of my master's thesis work in Politecnico di Milano to obtain the Masters of Science in Computer Science and Engineering and in Mathematical Engineering.
 
 ## Installation
 
-The code is tested on the version 3.0.0-beta56 of the [ARGoS simulator](https://www.argos-sim.info/). 
+The code is tested on the version 3.0.0-beta56 of the [ARGoS simulator](https://www.argos-sim.info/).
 
 To download this folder, use the following command-line instruction:
 
@@ -14,7 +14,7 @@ To download this folder, use the following command-line instruction:
 git clone --recurse-submodule git@github.com:AleCarminati/ml-faultdetection-epuck.git
 ```
 
-Then, by using `cd ml-faultdetection-epuck` you will enter the newly downloaded folder. 
+Then, by using `cd ml-faultdetection-epuck` you will enter the newly downloaded folder.
 
 To build the executable, use the following list of commands:
 
@@ -53,4 +53,12 @@ To run one experiment for each type of fault, from the root folder run the comma
 ./execute_all_faults.sh
 ```
 
- 
+ ## Contributing
+
+Before committing any changes, be sure to have installed the pre-commit hooks by running the following command from the root folder:
+
+```bash
+./bash/setup_pre_commit.sh
+```
+
+The pre-commit hooks contain some automatic checks to improve readability of the code. In particular, it uses the `clang` package.
