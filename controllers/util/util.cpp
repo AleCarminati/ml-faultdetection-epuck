@@ -45,6 +45,8 @@ unsigned int CConfiguration::NOT_BEACON_MESSAGE = 0u;
 unsigned int CConfiguration::BEACON_MESSAGE = 0u;
 unsigned int CConfiguration::BEACON_ID = 0u;
 unsigned int CConfiguration::BEACON_BYTE_INDEX = 0u;
+float CConfiguration::PROB_FAULTY = 0.0f;
+std::map<unsigned, std::string> CConfiguration::FAULTY_ROBOTS_MAP = {};
 
 /* Initialization of the source of randomness. Its seed will be based on the
  * seed selected in the .argos file.
@@ -209,6 +211,8 @@ void CConfiguration::ReadConfigurationFile() {
         BEACON_ID = std::stoi(rightSide);
       } else if (leftSide.compare("BEACON_BYTE_INDEX") == 0) {
         BEACON_BYTE_INDEX = std::stoi(rightSide);
+      } else if (leftSide.compare("PROB_FAULTY") == 0) {
+        PROB_FAULTY = std::stof(rightSide);
       } else {
         THROW_ARGOSEXCEPTION(
             "Unable to recognize the variable on the left side in line " +
@@ -221,6 +225,20 @@ void CConfiguration::ReadConfigurationFile() {
    * file. */
   HALF_INTERWHEEL_DISTANCE = INTERWHEEL_DISTANCE / 2.0f;
   ACCELERATION = MAX_FORCE * 100.0f / MASS;
+
+  /* Initialize at random the map with the faulty robots. */
+  std::vector<std::string> possible_faults = {
+      FAULT_BACT, FAULT_LACT, FAULT_PMAX, FAULT_PMIN,
+      FAULT_PRND, FAULT_RACT, FAULT_ROFS};
+  for (int i = 0; i < N_ROBOTS; ++i) {
+    CRange<Real> range(0.0f, 1.0f);
+    if (CSourceOfRandomness::m_pcRNG->Uniform(range) <= PROB_FAULTY) {
+      CRange<UInt32> fault_range(0u, 7u);
+      std::string fault =
+          possible_faults[CSourceOfRandomness::m_pcRNG->Uniform(fault_range)];
+      FAULTY_ROBOTS_MAP.insert(std::make_pair(i, fault));
+    }
+  }
 
   /* To check if the function parsed correctly the configuration file, uncomment
    * the next line.
@@ -321,6 +339,13 @@ void CConfiguration::PrintConfiguration() {
   output += "BEACON_ID = " + std::to_string(CConfiguration::BEACON_ID) + "\n";
   output += "BEACON_BYTE_INDEX = " +
             std::to_string(CConfiguration::BEACON_BYTE_INDEX) + "\n";
+  output +=
+      "PROB_FAULTY = " + std::to_string(CConfiguration::PROB_FAULTY) + "\n";
+  output += "FAULTY_ROBOTS_MAP = \n";
+  for (auto it = CConfiguration::FAULTY_ROBOTS_MAP.cbegin();
+       it != CConfiguration::FAULTY_ROBOTS_MAP.cend(); ++it) {
+    output += "\t" + std::to_string((*it).first) + " -> " + (*it).second + "\n";
+  }
 
   std::cout << output << std::endl;
 }

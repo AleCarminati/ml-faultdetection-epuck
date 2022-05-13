@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -164,6 +165,15 @@ class CConfiguration {
    * 0.
    */
   static unsigned int BEACON_BYTE_INDEX;
+
+  /* MULTIFAULT */
+  /* The probability that a single robot is faulty*/
+  static float PROB_FAULTY;
+
+  /* It contains the informations about faulty robots. Each key is the id of a
+   * faulty robot and it is linked to its fault.
+   */
+  static std::map<unsigned, std::string> FAULTY_ROBOTS_MAP;
 
   /* This function reads the configuration file and initializes all the
    * variables of the class. It contains a simple parser to read the .ini files,
