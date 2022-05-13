@@ -35,9 +35,13 @@ bool CEPuckFaultDetectionMultiFault::check_fault(int id,
 
 std::string CEPuckFaultDetectionMultiFault::generate_output_filename() const {
   int random_seed = CSimulator::GetInstance().GetRandomSeed();
-  std::string filename = "./data/multifault/" + m_behavior_str + "/" +
-                         m_behavior_str + "_" + std::to_string(random_seed) +
-                         ".csv";
+  std::string binary_or_numerical = "numerical";
+  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
+    binary_or_numerical = "binary";
+  }
+  std::string filename = "./data/multifault/" + binary_or_numerical +
+                         "_testing/" + m_behavior_str + "/" + m_behavior_str +
+                         "_" + std::to_string(random_seed) + ".csv";
   return filename;
 }
 
