@@ -217,8 +217,7 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
    */
   if (m_training) {
     for (int i = 0; i < N_ROBOTS; ++i) {
-      if (i == CConfiguration::ID_FAULTY_ROBOT &&
-          m_faultType.compare(CConfiguration::FAULT_NONE) != 0) {
+      if (!check_fault(i, CConfiguration::FAULT_NONE)) {
         m_faultProbabilities[i] = 1.0f;
       } else {
         m_faultProbabilities[i] = 0.0f;
@@ -465,7 +464,7 @@ void CEPuckFaultDetection::ControlStep() {
     }
   }
 
-  if (m_training && id_int != CConfiguration::ID_FAULTY_ROBOT) {
+  if (m_training && check_fault(id_int, CConfiguration::FAULT_NONE)) {
     WriteToCSVTraining();
   }
 
@@ -532,15 +531,13 @@ void CEPuckFaultDetection::ControlStep() {
 
   AvoidCollisions(tProxReads, wheelVelocity);
 
-  if (id_int == CConfiguration::ID_FAULTY_ROBOT) {
-    if (m_faultType.compare(CConfiguration::FAULT_LACT) == 0) {
-      wheelVelocity[0] = 0.0f;
-    } else if (m_faultType.compare(CConfiguration::FAULT_RACT) == 0) {
-      wheelVelocity[1] = 0.0f;
-    } else if (m_faultType.compare(CConfiguration::FAULT_BACT) == 0) {
-      wheelVelocity[0] = 0.0f;
-      wheelVelocity[1] = 0.0f;
-    }
+  if (check_fault(id_int, CConfiguration::FAULT_LACT)) {
+    wheelVelocity[0] = 0.0f;
+  } else if (check_fault(id_int, CConfiguration::FAULT_RACT)) {
+    wheelVelocity[1] = 0.0f;
+  } else if (check_fault(id_int, CConfiguration::FAULT_BACT)) {
+    wheelVelocity[0] = 0.0f;
+    wheelVelocity[1] = 0.0f;
   }
 
   m_pcWheels->SetLinearVelocity(wheelVelocity[0], wheelVelocity[1]);
@@ -653,48 +650,44 @@ void CEPuckFaultDetection::GetAndCorrectProxReadings(
   const CCI_EPuckProximitySensor::TReadings& sensorsReadings =
       m_pcProximity->GetReadings();
 
-  if (id_int == CConfiguration::ID_FAULTY_ROBOT) {
-    if (m_faultType.compare(CConfiguration::FAULT_PMIN) == 0) {
-      for (int i = 0; i < sensorsReadings.size(); ++i) {
-        correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
-        correctedReadings[i].Angle = sensorsReadings[i].Angle;
-        // Modify only the frontal readings.
-        if (i < sensorsReadings.size() / 4 ||
-            i >= sensorsReadings.size() * 3 / 4) {
-          correctedReadings[i].Value = 0.0f;
-        } else {
-          correctedReadings[i].Value = sensorsReadings[i].Value;
-        }
+  if (check_fault(id_int, CConfiguration::FAULT_PMIN)) {
+    for (int i = 0; i < sensorsReadings.size(); ++i) {
+      correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
+      correctedReadings[i].Angle = sensorsReadings[i].Angle;
+      // Modify only the frontal readings.
+      if (i < sensorsReadings.size() / 4 ||
+          i >= sensorsReadings.size() * 3 / 4) {
+        correctedReadings[i].Value = 0.0f;
+      } else {
+        correctedReadings[i].Value = sensorsReadings[i].Value;
       }
-    } else if (m_faultType.compare(CConfiguration::FAULT_PMAX) == 0) {
-      for (int i = 0; i < sensorsReadings.size(); ++i) {
-        correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
-        correctedReadings[i].Angle = sensorsReadings[i].Angle;
-        // Modify only the frontal readings.
-        if (i < sensorsReadings.size() / 4 ||
-            i >= sensorsReadings.size() * 3 / 4) {
-          correctedReadings[i].Value = 1.0f;
-        } else {
-          correctedReadings[i].Value = sensorsReadings[i].Value;
-        }
+    }
+  } else if (check_fault(id_int, CConfiguration::FAULT_PMAX)) {
+    for (int i = 0; i < sensorsReadings.size(); ++i) {
+      correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
+      correctedReadings[i].Angle = sensorsReadings[i].Angle;
+      // Modify only the frontal readings.
+      if (i < sensorsReadings.size() / 4 ||
+          i >= sensorsReadings.size() * 3 / 4) {
+        correctedReadings[i].Value = 1.0f;
+      } else {
+        correctedReadings[i].Value = sensorsReadings[i].Value;
       }
-    } else if (m_faultType.compare(CConfiguration::FAULT_PRND) == 0) {
-      CRange<Real> range(0.0f, 1.0f);
+    }
+  } else if (check_fault(id_int, CConfiguration::FAULT_PRND)) {
+    CRange<Real> range(0.0f, 1.0f);
 
-      for (int i = 0; i < sensorsReadings.size(); ++i) {
-        correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
-        correctedReadings[i].Angle = sensorsReadings[i].Angle;
-        // Modify only the frontal readings.
-        if (i < sensorsReadings.size() / 4 ||
-            i >= sensorsReadings.size() * 3 / 4) {
-          correctedReadings[i].Value =
-              CSourceOfRandomness::m_pcRNG->Uniform(range);
-        } else {
-          correctedReadings[i].Value = sensorsReadings[i].Value;
-        }
+    for (int i = 0; i < sensorsReadings.size(); ++i) {
+      correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
+      correctedReadings[i].Angle = sensorsReadings[i].Angle;
+      // Modify only the frontal readings.
+      if (i < sensorsReadings.size() / 4 ||
+          i >= sensorsReadings.size() * 3 / 4) {
+        correctedReadings[i].Value =
+            CSourceOfRandomness::m_pcRNG->Uniform(range);
+      } else {
+        correctedReadings[i].Value = sensorsReadings[i].Value;
       }
-    } else {
-      correctedReadings = sensorsReadings;
     }
   } else {
     correctedReadings = sensorsReadings;
@@ -711,8 +704,7 @@ void CEPuckFaultDetection::GetAndCorrectRABReadings(
   const CCI_RangeAndBearingSensor::TReadings& sensorsReadings =
       m_pcRABS->GetReadings();
 
-  if (id_int == CConfiguration::ID_FAULTY_ROBOT &&
-      m_faultType.compare(CConfiguration::FAULT_ROFS) == 0) {
+  if (check_fault(id_int, CConfiguration::FAULT_ROFS)) {
     CRange<Real> poolRange(75.0f, 100.0f);
     CRange<CRadians> poolBearing(-CRadians::PI, CRadians::PI);
 
@@ -1694,8 +1686,7 @@ void CEPuckFaultDetection::WriteToCSVTesting() {
                          std::to_string(m_localCoalitionList[i].numberOfVotes) +
                          ";" + std::to_string(m_localCoalitionList[i].faulty) +
                          ";";
-      if (i == CConfiguration::ID_FAULTY_ROBOT &&
-          m_faultType.compare(CConfiguration::FAULT_NONE) != 0) {
+      if (!check_fault(i, CConfiguration::FAULT_NONE)) {
         output_file << "1";
       } else {
         output_file << "0";
@@ -1786,7 +1777,7 @@ void CEPuckFaultDetection::ReadMessagesCoalitionFormation(
   }
 }
 
-bool CEPuckFaultDetection::use_xg_booster() {
+bool CEPuckFaultDetection::use_xg_booster() const {
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     if (m_behavior_str == "floc" || m_behavior_str == "homi") {
       return true;
@@ -1797,6 +1788,16 @@ bool CEPuckFaultDetection::use_xg_booster() {
     }
   }
   return false;
+}
+
+bool CEPuckFaultDetection::check_fault(int id, std::string fault) const {
+  std::string real_fault;
+  if (id == CConfiguration::ID_FAULTY_ROBOT) {
+    real_fault = m_faultType;
+  } else {
+    real_fault = CConfiguration::FAULT_NONE;
+  }
+  return (fault.compare(real_fault) == 0);
 }
 
 /****************************************/

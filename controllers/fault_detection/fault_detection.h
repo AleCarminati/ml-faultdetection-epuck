@@ -309,7 +309,14 @@ class CEPuckFaultDetection : public CCI_Controller {
   /* This function returns if the classifier that the robot must use is
    * an extreme gradient booster.
    */
-  bool use_xg_booster();
+  bool use_xg_booster() const;
+
+  /* This function returns if the robot with a certain id has the fault
+   * specified in the second parameter.
+   * To check if a robot is faulty or not, put CConfiguration::FAULT_NONE as
+   * the second parameter.
+   */
+  virtual bool check_fault(int id, std::string fault) const;
 };
 
 #endif
