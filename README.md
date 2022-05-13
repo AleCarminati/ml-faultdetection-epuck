@@ -33,6 +33,8 @@ For developers: the parameters of the fault detection algorithm can be found in 
 
 ## Run
 
+### Single fault
+
 To run the experiment, from the terminal in the root folder write:
 
 ```bash
@@ -52,6 +54,22 @@ To run one experiment for each type of fault, from the root folder run the comma
 ```bash
 ./execute_all_faults.sh
 ```
+
+### Multi fault
+
+To run the experiment with more than one faulty robot, from the terminal in the root folder write:
+
+```bash
+argos3 -c experiments/fault_detection_multifault.argos
+```
+
+When you modify the code, from the root folder run the command:
+
+```bash
+./execute.sh m
+```
+
+which recompiles the code and then executes the simulation.
 
  ## Contributing
 

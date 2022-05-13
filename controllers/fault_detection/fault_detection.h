@@ -176,10 +176,6 @@ class CEPuckFaultDetection : public CCI_Controller {
   /* Wheel speed. */
   Real m_fWheelVelocity;
 
-  /* Contains the string that defines the type of behavior that the swarm
-   * follows. */
-  std::string m_behavior_str;
-
   /* Vector that contains the classes that compute the behavior of the robot.
    * shared_ptr gives the possibility to maintain the object outside the Init
    * function and to use polymorphism. Normal pointers would have lost the
@@ -317,6 +313,14 @@ class CEPuckFaultDetection : public CCI_Controller {
    * the second parameter.
    */
   virtual bool check_fault(int id, std::string fault) const;
+
+  /* This function generates the name of the file where to write the output. */
+  virtual std::string generate_output_filename() const;
+
+ protected:
+  /* Contains the string that defines the type of behavior that the swarm
+   * follows. */
+  std::string m_behavior_str;
 };
 
 #endif

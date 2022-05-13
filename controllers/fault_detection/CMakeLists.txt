@@ -1,4 +1,4 @@
-add_library(fault_detection SHARED fault_detection.h fault_detection.cpp ../util/util.h ../util/util.cpp ../behaviors/behavior.h ../behaviors/behavior.cpp ../behaviors/aggregatebehavior.h ../behaviors/aggregatebehavior.cpp ../behaviors/dispersebehavior.h ../behaviors/dispersebehavior.cpp ../behaviors/randomwalkbehavior.h ../behaviors/randomwalkbehavior.cpp ../behaviors/flockingbehavior.h ../behaviors/flockingbehavior.cpp ../behaviors/homingbehavior.h ../behaviors/homingbehavior.cpp )
+add_library(fault_detection SHARED fault_detection_multifault.h fault_detection_multifault.cpp fault_detection.h fault_detection.cpp ../util/util.h ../util/util.cpp ../behaviors/behavior.h ../behaviors/behavior.cpp ../behaviors/aggregatebehavior.h ../behaviors/aggregatebehavior.cpp ../behaviors/dispersebehavior.h ../behaviors/dispersebehavior.cpp ../behaviors/randomwalkbehavior.h ../behaviors/randomwalkbehavior.cpp ../behaviors/flockingbehavior.h ../behaviors/flockingbehavior.cpp ../behaviors/homingbehavior.h ../behaviors/homingbehavior.cpp )
 
 
 find_package(PythonLibs REQUIRED)

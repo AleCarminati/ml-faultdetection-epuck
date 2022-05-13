@@ -2,4 +2,8 @@
 cd build
 make
 cd ..
-argos3 -c experiments/fault_detection.argos
+if [[ $1 = "m" ]]; then
+	argos3 -c experiments/fault_detection_multifault.argos
+else
+	argos3 -c experiments/fault_detection.argos
+fi

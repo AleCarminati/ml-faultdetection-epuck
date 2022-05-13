@@ -344,25 +344,9 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
     safe_xgboost(XGBoosterLoadModel(booster, path.c_str()));
   }
 
-  int random_seed = CSimulator::GetInstance().GetRandomSeed();
-  bool newFile = false;
-  std::string filename = "";
-  filename = "./data/binary_training/" + m_behavior_str + "/" + m_behavior_str +
-             "_" + m_faultType + "_" + std::to_string(random_seed) + ".csv";
-  std::string testing_or_training = "testing";
-  std::string binary_or_numerical = "numerical";
-  std::string behav_fault_folder = m_behavior_str + "_" + m_faultType + "/";
-  if (m_training) {
-    testing_or_training = "training";
-    behav_fault_folder = "";
-  }
-  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
-    binary_or_numerical = "binary";
-  }
-  filename = "./data/" + binary_or_numerical + "_" + testing_or_training + "/" +
-             m_behavior_str + "/" + behav_fault_folder + m_behavior_str + "_" +
-             m_faultType + "_" + std::to_string(random_seed) + ".csv";
+  std::string filename = generate_output_filename();
 
+  bool newFile = false;
   std::ifstream fileExistence(filename);
   if (!fileExistence) {
     newFile = true;
@@ -1798,6 +1782,28 @@ bool CEPuckFaultDetection::check_fault(int id, std::string fault) const {
     real_fault = CConfiguration::FAULT_NONE;
   }
   return (fault.compare(real_fault) == 0);
+}
+
+std::string CEPuckFaultDetection::generate_output_filename() const {
+  int random_seed = CSimulator::GetInstance().GetRandomSeed();
+  std::string filename = "";
+  filename = "./data/binary_training/" + m_behavior_str + "/" + m_behavior_str +
+             "_" + m_faultType + "_" + std::to_string(random_seed) + ".csv";
+  std::string testing_or_training = "testing";
+  std::string binary_or_numerical = "numerical";
+  std::string behav_fault_folder = m_behavior_str + "_" + m_faultType + "/";
+  if (m_training) {
+    testing_or_training = "training";
+    behav_fault_folder = "";
+  }
+  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
+    binary_or_numerical = "binary";
+  }
+  filename = "./data/" + binary_or_numerical + "_" + testing_or_training + "/" +
+             m_behavior_str + "/" + behav_fault_folder + m_behavior_str + "_" +
+             m_faultType + "_" + std::to_string(random_seed) + ".csv";
+
+  return filename;
 }
 
 /****************************************/
