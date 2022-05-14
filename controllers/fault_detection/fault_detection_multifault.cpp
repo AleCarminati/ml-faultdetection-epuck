@@ -39,6 +39,7 @@ std::string CEPuckFaultDetectionMultiFault::generate_output_filename() const {
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     binary_or_numerical = "binary";
   }
+  // binary_or_numerical = "dummy";
   std::string filename = "./data/multifault/" + binary_or_numerical +
                          "_testing/" + m_behavior_str + "/" + m_behavior_str +
                          "_" + std::to_string(random_seed) + ".csv";

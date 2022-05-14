@@ -34,7 +34,7 @@
       <!-- The parameters fault_type and training are kept only for compatibility -->
       <!-- reasons. Keep in mind that fault_type will be ignored and that training -->
       <!-- in this setting has not been tested -->
-      <params behavior="disp" velocity="5" fault_type="" training="false"/>
+      <params behavior="aggr" velocity="5" fault_type="" training="false"/>
     </epuck_fault_detection_multifault>
 
   </controllers>
