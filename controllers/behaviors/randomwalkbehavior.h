@@ -19,7 +19,7 @@ class CRandomWalkBehavior : public CBehavior {
   CRandomWalkBehavior(Real maxWheelSpeed);
 
   /* This function will always return true value: there are no particular
-   * conditions for the random walk behavior to be executed.
+   * required conditions for the random walk behavior to be executed.
    */
   virtual bool Action(CCI_EPuckProximitySensor::TReadings& tProxReads,
                       CCI_RangeAndBearingSensor::TReadings& tRABReads,

@@ -100,7 +100,9 @@ class CConfiguration {
    * possible to compute it. */
   static float INVALID_ANGULAR_SPEED;
   /* Represents if the conservative solution of the collision problem must be
-   * used (true value) or not (false value).
+   * used (true value) or not (false value). The conservative solution of the
+   * collision problem makes all the observations of a robot invalid if that
+   * robot probably collided in the last control step.
    */
   static bool COLLISION_CONSERVATIVE;
   /* Represents if the robot must observe also its own behavior. */
@@ -158,7 +160,7 @@ class CConfiguration {
    * ones that come from a normal robot. */
   static unsigned int NOT_BEACON_MESSAGE;
   static unsigned int BEACON_MESSAGE;
-  /* The ID of the robot that must be the beacon in the homing behavior.*/
+  /* The ID of the robot that must be the beacon in the homing behavior. */
   static unsigned int BEACON_ID;
   /* The index of the byte that identifies it the sender is a beacon or not. It
    * is computed with the assumption that the first position has index equal to
@@ -167,7 +169,7 @@ class CConfiguration {
   static unsigned int BEACON_BYTE_INDEX;
 
   /* MULTIFAULT */
-  /* The probability that a single robot is faulty*/
+  /* The probability that a single robot is faulty. */
   static float PROB_FAULTY;
 
   /* It contains the informations about faulty robots. Each key is the id of a
@@ -177,7 +179,7 @@ class CConfiguration {
 
   /* This function reads the configuration file and initializes all the
    * variables of the class. It contains a simple parser to read the .ini files,
-   * which supports sections and single-line comments. that start with '#'.
+   * which supports sections and single-line comments that start with '#'.
    */
   static void ReadConfigurationFile();
 

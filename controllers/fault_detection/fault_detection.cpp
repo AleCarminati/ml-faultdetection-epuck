@@ -1544,57 +1544,6 @@ void CEPuckFaultDetection::UpdateFaultProbabilities() {
          probability=0.0f;
       }*/
 
-      /* PYTHON CALL */
-      /*PyObject *pName, *pModule, *pFunc;
-      PyObject *pArgs, *pValue;
-
-      setenv("PYTHONPATH","./python",0);
-
-      Py_Initialize();
-      pName = PyUnicode_DecodeFSDefault("classifier");
-      pModule = PyImport_Import(pName);
-      Py_DECREF(pName);
-
-      if(pModule != NULL){
-         pFunc = PyObject_GetAttrString(pModule, "classificationFunction");
-
-         if(pFunc && PyCallable_Check(pFunc)){
-            pArgs = PyTuple_New(1);*/
-      /* The observation string terminates with a semicolumn. It must
-       * be removed, in this way Python can read it as a csv string.
-       */
-      /*observations.erase(observations.end()-1);
-      PyTuple_SetItem(pArgs, 0, PyUnicode_FromString(&observations[0]));
-      pValue = PyObject_CallObject(pFunc, pArgs);
-      Py_DECREF(pArgs);
-      if(pValue != NULL){
-         probability = std::stof(PyUnicode_AsUTF8(pValue));
-      }else{
-         Py_DECREF(pFunc);
-         Py_DECREF(pModule);
-         PyErr_Print();
-         unsetenv("PYTHONPATH");
-         THROW_ARGOSEXCEPTION("Python call: the call to the function returned
-NULL value.");
-      }
-   }else{
-      if(PyErr_Occurred()){
-         PyErr_Print();
-      }
-      Py_XDECREF(pFunc);
-      Py_DECREF(pModule);
-      unsetenv("PYTHONPATH");
-      THROW_ARGOSEXCEPTION("Python call: can't find the function inside the
-file.");
-   }
-}else{
-   PyErr_Print();
-   unsetenv("PYTHONPATH");
-   THROW_ARGOSEXCEPTION("Python call: can't find the file.");
-}
-
-unsetenv("PYTHONPATH");*/
-
       if (probability >= 0.0f && probability <= 1.0f) {
         m_faultProbabilityAccumulator[i].faultProbabilityAccumulator +=
             probability;
