@@ -29,7 +29,6 @@
         <epuck_proximity implementation="default" show_rays="true" noise_level="0.1"/>
         <range_and_bearing implementation="medium" medium="rab" show_rays="true" noise_std_dev="0.01" />
         <differential_steering implementation="default" vel_noise_range="-0.1:0.1"  dist_noise_range="-1.0:1.0" />
-        <positioning implementation="default" />
       </sensors>
       <!-- The parameters fault_type and training are kept only for compatibility -->
       <!-- reasons. Keep in mind that fault_type will be ignored and that training -->

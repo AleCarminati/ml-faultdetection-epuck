@@ -124,7 +124,6 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
   m_pcProximity = GetSensor<CCI_EPuckProximitySensor>("epuck_proximity");
   m_pcRABA = GetActuator<CCI_RangeAndBearingActuator>("range_and_bearing");
   m_pcRABS = GetSensor<CCI_RangeAndBearingSensor>("range_and_bearing");
-  m_pcPosSens = GetSensor<CCI_PositioningSensor>("positioning");
   /*
    * Parse the parameters in .argos file.
    */
@@ -461,37 +460,6 @@ void CEPuckFaultDetection::ControlStep() {
   } else {
     ObserveNeighborsNumerical(tRABReads, tDifReads, tProxReads);
   }
-
-  /*m_lastPosVector.push_back(m_pcPosSens->GetReading());
-  if(m_timeCounter >= TIME_WINDOW_OBSERVATION){
-     m_lastPosVector.erase(m_lastPosVector.begin());
-  }
-
-  std::ofstream fstrm("0.01_noise_integration.csv", std::ofstream::app);
-  std::string output;
-  if(id_int==19){
-     if(m_timeCounter >= TIME_WINDOW_OBSERVATION){
-        output =
-  std::to_string(CVector2(m_lastPosVector[0].Position.GetX()*100-m_lastPosVector[TIME_WINDOW_OBSERVATION-1].Position.GetX()*100,
-  m_lastPosVector[0].Position.GetY()*100-m_lastPosVector[TIME_WINDOW_OBSERVATION-1].Position.GetY()*100).Length());
-     }else{
-        output = "";
-     }
-     output+="\n";
-  }else{
-     if(m_numericalObservations[19][N_OBSERVATIONS-1].validity &&
-  m_numericalObservations[19][N_OBSERVATIONS-1].displacement!=CConfiguration::INVALID_DISPLACEMENT){
-        output =
-  std::to_string(m_numericalObservations[19][N_OBSERVATIONS-1].displacement);
-     }else{
-        output="";
-     }
-     output+=";";
-  }
-  stringReplace(output, ',','.');
-  if(m_timeCounter >= TIME_WINDOW_OBSERVATION){
-     fstrm << output;
-  }*/
 
   /* Contains the velocities that the two wheels will have during the next step.
    * They are initialized with the velocities in the last step because the

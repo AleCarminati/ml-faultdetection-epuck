@@ -36,11 +36,10 @@
 #include "../behaviors/homingbehavior.h"
 #include "../behaviors/randomwalkbehavior.h"
 
-/* Definition of the positioning sensor */
+/* Definition of the positioning sensor. */
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+/* xgBoost library. */
 #include <xgboost/c_api.h>
 
 /*
@@ -135,11 +134,13 @@ class CEPuckFaultDetection : public CCI_Controller {
       CCI_EPuckProximitySensor::TReadings& tProxReads);
 
   /* This function updates the fault probabilities of all the robots in the
-   * swarm. */
+   * swarm.
+   */
   void UpdateFaultProbabilities();
 
   /* This function writes the observations and the fault probabilities in a CSV
-   *  file during the training phase. */
+   *  file during the training phase.
+   */
   void WriteToCSVTraining();
 
   /* This function writes the results of the local coalitions in a CSV file
@@ -165,13 +166,6 @@ class CEPuckFaultDetection : public CCI_Controller {
   CCI_RangeAndBearingActuator* m_pcRABA;
   /* Pointer to the range and bearing sensor */
   CCI_RangeAndBearingSensor* m_pcRABS;
-  /* Pointer to the positioning sensor */
-  CCI_PositioningSensor* m_pcPosSens;
-
-  /* This vector is used ONLY for testing purposes. It does not affect the fault
-   * detection algorithm.
-   */
-  std::vector<CCI_PositioningSensor::SReading> m_lastPosVector;
 
   /* Wheel speed. */
   Real m_fWheelVelocity;
