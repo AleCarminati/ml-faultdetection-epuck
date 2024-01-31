@@ -84,3 +84,5 @@ The pre-commit hooks contain some automatic checks to improve readability of the
 ## Milestones
 
 Commit [19f511f](https://github.com/AleCarminati/ml-faultdetection-epuck/commit/19f511f52f5c2740eff590ec553d2d9f3853ff14): this version of the software has been used to generate training data and to test the fault detection system when a single robot is fault, obtaining the results that are displayed in the master's thesis.
+
+Commit [c503768](https://github.com/AleCarminati/ml-faultdetection-epuck/commit/c503768388831d439c259403915dbe59656d0d71): this version of the software has been used to test the fault detection system when multiple robots are fault, obtaining the results that are displayed in the master's thesis.
