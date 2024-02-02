@@ -228,6 +228,10 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
     }
   }
 
+  /* Allocate the memory needed to store the displacement of the robots.
+   * Initialize every cell with a value that represents that the displacement
+   * is invalid.
+   */
   DisplacementAccumulator displacementsMatrix[N_ROBOTS]
                                              [TIME_WINDOW_OBSERVATION];
   memcpy(m_displacementsMatrix, displacementsMatrix,
@@ -238,6 +242,9 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
     }
   }
 
+  /* Initialize all the data structures required to compute the boolean
+   * observations.
+   */
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     NeighborAccumulator neighborsMatrix[N_ROBOTS][TIME_WINDOW_OBSERVATION];
     memcpy(m_neighborsMatrix, neighborsMatrix,
@@ -247,9 +254,7 @@ void CEPuckFaultDetection::Init(TConfigurationNode& t_node) {
         m_neighborsMatrix[i][j].validity = false;
       }
     }
-  }
 
-  if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     unsigned int irrespPriorAlpha[N_ROBOTS];
     memcpy(m_irrespPriorAlpha, irrespPriorAlpha,
            sizeof(unsigned int) * N_ROBOTS);
@@ -418,11 +423,11 @@ void CEPuckFaultDetection::ControlStep() {
 
   // If we are not in training, use the classification algorithm.
   if (!m_training) {
-    /* An entire round of observing and coalition formation finished.
-     * Write the results in a .csv file.
-     */
     if (m_timeCounter % (COMPARISON_CONTROL_STEPS + OBSERVE_CONTROL_STEPS) ==
         0) {
+      /* An entire round of observing and coalition formation finished.
+       * Write the results in a .csv file.
+       */
       WriteToCSVTesting();
       // Reset the probability accumulators.
       for (int i = 0; i < N_ROBOTS; ++i) {
@@ -439,10 +444,12 @@ void CEPuckFaultDetection::ControlStep() {
     } else if (m_timeCounter %
                    (COMPARISON_CONTROL_STEPS + OBSERVE_CONTROL_STEPS) <=
                OBSERVE_CONTROL_STEPS) {
+      // We are in Phase B: Classify.
       UpdateFaultProbabilities();
     } else if (m_timeCounter %
                    (COMPARISON_CONTROL_STEPS + OBSERVE_CONTROL_STEPS) >
                OBSERVE_CONTROL_STEPS) {
+      // We are in Phase C: Vote.
       ReadMessagesCoalitionFormation(tRABReads);
     }
   }
@@ -450,10 +457,6 @@ void CEPuckFaultDetection::ControlStep() {
   if (m_training && check_fault(id_int, CConfiguration::FAULT_NONE)) {
     WriteToCSVTraining();
   }
-
-  /*if(m_training && id_int == 15){
-     WriteToCSVTraining();
-  }*/
 
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     ObserveNeighborsBoolean(tRABReads, tDifReads, tProxReads);
@@ -512,7 +515,7 @@ void CEPuckFaultDetection::ControlStep() {
   }
   cBuf << beaconByte;
 
-  // Compare the boolean observations.
+  // Send the robot's boolean observations to the other robots for comparision.
   if (CConfiguration::BOOLEAN_OBSERVATIONS) {
     unsigned int numObservedRobots = 0;
     for (int i = 0; i < N_ROBOTS; ++i) {
@@ -602,41 +605,24 @@ void CEPuckFaultDetection::GetAndCorrectProxReadings(
   const CCI_EPuckProximitySensor::TReadings& sensorsReadings =
       m_pcProximity->GetReadings();
 
-  if (check_fault(id_int, CConfiguration::FAULT_PMIN)) {
+  if (check_fault(id_int, CConfiguration::FAULT_PMIN) ||
+      check_fault(id_int, CConfiguration::FAULT_PMAX) ||
+      check_fault(id_int, CConfiguration::FAULT_PRND)) {
     for (int i = 0; i < sensorsReadings.size(); ++i) {
       correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
       correctedReadings[i].Angle = sensorsReadings[i].Angle;
       // Modify only the frontal readings.
       if (i < sensorsReadings.size() / 4 ||
           i >= sensorsReadings.size() * 3 / 4) {
-        correctedReadings[i].Value = 0.0f;
-      } else {
-        correctedReadings[i].Value = sensorsReadings[i].Value;
-      }
-    }
-  } else if (check_fault(id_int, CConfiguration::FAULT_PMAX)) {
-    for (int i = 0; i < sensorsReadings.size(); ++i) {
-      correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
-      correctedReadings[i].Angle = sensorsReadings[i].Angle;
-      // Modify only the frontal readings.
-      if (i < sensorsReadings.size() / 4 ||
-          i >= sensorsReadings.size() * 3 / 4) {
-        correctedReadings[i].Value = 1.0f;
-      } else {
-        correctedReadings[i].Value = sensorsReadings[i].Value;
-      }
-    }
-  } else if (check_fault(id_int, CConfiguration::FAULT_PRND)) {
-    CRange<Real> range(0.0f, 1.0f);
-
-    for (int i = 0; i < sensorsReadings.size(); ++i) {
-      correctedReadings.push_back(CCI_EPuckProximitySensor::SReading());
-      correctedReadings[i].Angle = sensorsReadings[i].Angle;
-      // Modify only the frontal readings.
-      if (i < sensorsReadings.size() / 4 ||
-          i >= sensorsReadings.size() * 3 / 4) {
-        correctedReadings[i].Value =
-            CSourceOfRandomness::m_pcRNG->Uniform(range);
+        if (check_fault(id_int, CConfiguration::FAULT_PMIN)) {
+          correctedReadings[i].Value = 0.0f;
+        } else if (check_fault(id_int, CConfiguration::FAULT_PMAX)) {
+          correctedReadings[i].Value = 1.0f;
+        } else {
+          CRange<Real> range(0.0f, 1.0f);
+          correctedReadings[i].Value =
+              CSourceOfRandomness::m_pcRNG->Uniform(range);
+        }
       } else {
         correctedReadings[i].Value = sensorsReadings[i].Value;
       }
@@ -1266,14 +1252,15 @@ void CEPuckFaultDetection::ObserveNeighborsNumerical(
 
 void CEPuckFaultDetection::UpdateFaultProbabilities() {
   for (int i = 0; i < N_ROBOTS; ++i) {
+    /* Checks validity of all the last N_OBSERVATIONS observations, sets flag to
+     * false if any is invalid.
+     */
     bool completeObservation = true;
-    std::string observations = "";
     for (int j = 0; j < N_OBSERVATIONS; ++j) {
       if (CConfiguration::BOOLEAN_OBSERVATIONS) {
         if (!m_booleanObservations[i][j].validity) {
           completeObservation = false;
         }
-        observations += m_booleanObservations[i][j].toCsvString();
       } else {
         if (!m_numericalObservations[i][j].validity ||
             m_numericalObservations[i][j].displacement ==
@@ -1282,14 +1269,11 @@ void CEPuckFaultDetection::UpdateFaultProbabilities() {
                 CConfiguration::INVALID_MIN_NEIGHBOR_DISTANCE) {
           completeObservation = false;
         }
-        observations += m_numericalObservations[i][j].toCsvString();
       }
     }
-    stringReplace(observations, ',', '.');
 
     if (completeObservation) {
       float probability;
-      observations = "";
 
       /* Normalization */
       float inputMatrixNum[5 * N_OBSERVATIONS];
@@ -1314,13 +1298,6 @@ void CEPuckFaultDetection::UpdateFaultProbabilities() {
                 (m_numericalObservations[i][j].averageNeighborDistance -
                  22.64306708) /
                 15.97433554;
-            /*observations = observations + std::to_string(inputMatrixNum
-            [j*5+0])+";"; observations = observations +
-            std::to_string(inputMatrixNum [j*5+1])+";"; observations =
-            observations + std::to_string(inputMatrixNum [j*5+2])+";";
-            observations = observations + std::to_string(inputMatrixNum
-            [j*5+3])+";"; observations = observations +
-            std::to_string(inputMatrixNum [j*5+4])+";";*/
           } else if (m_behavior_str.compare(CConfiguration::DISPERSE) == 0) {
             inputMatrixNum[j * 5 + 0] =
                 (m_numericalObservations[i][j].velLeftWheel - 4.25749918) /
@@ -1386,8 +1363,6 @@ void CEPuckFaultDetection::UpdateFaultProbabilities() {
           }
         }
       }
-
-      stringReplace(observations, ',', '.');
 
       if (use_xg_booster()) {
         DMatrixHandle dmatrix;

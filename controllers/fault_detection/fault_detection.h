@@ -188,9 +188,9 @@ class CEPuckFaultDetection : public CCI_Controller {
    */
   std::shared_ptr<CFlockingBehavior> m_flockingBehavior;
 
-  /* Data structures that contain the last observations of the
-   * robots, the fault  probabilities based on that observations and the last
-   * reading of the RAB for each other robot.
+  /* Data structures that contain the last observations of the robots, the fault
+   * probabilities based on that observations and the last reading of the RAB
+   * for each other robot.
    * Only one of the two observation matrices are used, based on what type
    * of observations (boolean or numerical) the experiment is using.
    */
@@ -219,7 +219,7 @@ class CEPuckFaultDetection : public CCI_Controller {
    */
   float m_lastWheelVel[2];
 
-  /* Contains the type of fault that affects the swarm.*/
+  /* Contains the type of fault that affects the swarm. */
   std::string m_faultType;
 
   /* Defines if the experiment is run to get data for training. */
