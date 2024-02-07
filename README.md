@@ -1,8 +1,6 @@
 # Machine Learning-based fault detection in a e-puck swarm
 
-This repository contains the code to run a machine learning-based fault detection algorithm in a e-puck swarm.
-
-It is part of my master's thesis work in Politecnico di Milano to obtain the Masters of Science in Computer Science and Engineering and in Mathematical Engineering.
+This repository contains the code and the supplementary material for the study: A. Carminati, D. Azzalini, S. Vantini, and F. Amigoni, “A Distributed Approach for Fault Detection in Swarms of Robots,” *Proceedings of the 2024 International Conference on Autonomous Agents and Multiagent Systems*, 2024.
 
 ## Installation
 
